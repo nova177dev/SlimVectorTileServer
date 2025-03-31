@@ -1,0 +1,1 @@
+﻿create user vector_tile_server_app for login vector_tile_server_app

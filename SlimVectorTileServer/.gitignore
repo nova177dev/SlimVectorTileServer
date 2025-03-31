@@ -1,0 +1,10 @@
+﻿# globals
+bin/
+obj/
+applog*.json
+*.suo
+*.tmp
+*.user
+.env
+.vs
+*.Development.json
