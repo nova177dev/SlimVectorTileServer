@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
 
-A lightweight, high-performance vector tile server built with .NET Core that dynamically generates vector tiles from MS SQL Server database data. This server follows clean architecture principles and provides a simple API for serving MapBox Vector Tiles to web applications.
+A lightweight, high-performance MapBox Custom Vector Tile Server built with .NET Core that dynamically generates vector tiles from MS SQL Server database data. This server follows clean architecture principles and provides a simple API for serving MapBox Vector Tiles to web applications.
 
 ## Table of Contents
 
