@@ -17,31 +17,31 @@ namespace SlimVectorTileServer.Application.Common
         {
             _dbDataContext = dbDataContext;
         }
-        public async Task<byte[]> CreateTileAsync(int z, int x, int y, string uuid, CancellationToken cancellationToken)
+        public async Task<byte[]> CreateTileAsync(int zoom, int xTile, int yTile, string uuid, CancellationToken cancellationToken)
         {
-            return await Task.FromResult(CreateTile(z, x, y, uuid));
+            return await Task.FromResult(CreateTile(zoom, xTile, yTile, uuid));
         }
-        public byte[] CreateTile(int z, int x, int y, string uuid)
+        public byte[] CreateTile(int zoom, int xTile, int yTile, string uuid)
         {
-            var tileDefinition = new NetTopologySuite.IO.VectorTiles.Tiles.Tile(x, y, z);
+            var tileDefinition = new NetTopologySuite.IO.VectorTiles.Tiles.Tile(xTile, yTile, zoom);
             var tile = new VectorTile { TileId = tileDefinition.Id };
 
             var factory = new GeometryFactory(new PrecisionModel(PrecisionModels.Floating));
             var layer = new Layer { Name = "sites" };
 
-            double tileSize = 1 << z;
-            double minX = x / tileSize * 360 - 180;
-            double maxX = (x + 1) / tileSize * 360 - 180;
-            double minY = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * (y + 1) / tileSize))) * 180 / Math.PI;
-            double maxY = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y / tileSize))) * 180 / Math.PI;
+            double tileSize = 1 << zoom;
+            double minX = xTile / tileSize * 360 - 180;
+            double maxX = (xTile + 1) / tileSize * 360 - 180;
+            double minY = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * (yTile + 1) / tileSize))) * 180 / Math.PI;
+            double maxY = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * yTile / tileSize))) * 180 / Math.PI;
 
             try
             {
                 var pois = _dbDataContext.RequestDbForDataSet("dbo", "sites_get", new
                     {
-                        x = x,
-                        y = y,
-                        z = z,
+                        x = xTile,
+                        y = yTile,
+                        z = zoom,
                         uuid = uuid
                     }
                 );

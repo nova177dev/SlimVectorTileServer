@@ -46,16 +46,16 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
         /// Returns a MapBox Vector Tile (MVT) for the specified tile coordinates in Mercator projection.
         /// </summary>
         [AllowAnonymous]
-        [HttpGet("{z}/{x}/{y}/{uuid}.mvt")]
+        [HttpGet("{zoom}/{xTile}/{yTile}/{uuid}")]
         [Produces("application/x-protobuf")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileResult))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetVectorTiles(int z, int x, int y, string uuid)
+        public async Task<IActionResult> GetVectorTiles(int zoom, int xTile, int yTile, string uuid)
         {
             Response.Headers.Append("Content-Encoding", "gzip");
             Response.Headers.Vary = HeaderNames.AcceptEncoding;
 
-            byte[] response = await _mediator.Send(new GetVectorTileQuery(z, x, y, uuid));
+            byte[] response = await _mediator.Send(new GetVectorTileQuery(zoom, xTile, yTile, uuid));
             return File(response, "application/x-protobuf");
 
         }
