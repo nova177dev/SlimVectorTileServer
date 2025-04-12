@@ -1,11 +1,9 @@
 ﻿using SlimVectorTileServer.Application.Common;
-using SlimVectorTileServer.Application.Static.VectorTiles.Queries;
 using SlimVectorTileServer.Infrastructure.Options;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
-using System.Linq;
 
 namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
 {
@@ -15,46 +13,62 @@ namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
         private readonly AppLogger _appLogger;
         private readonly IDistributedCache _cache;
         private readonly CacheSettings _cacheSettings;
+        private readonly IWebHostEnvironment _environment;
 
         public GetVectorTileQueryHandler(
             TilesService tilesService,
             AppLogger appLogger,
             IDistributedCache cache,
-            IOptions<CacheSettings> cacheSettings)
+            IOptions<CacheSettings> cacheSettings,
+            IWebHostEnvironment environment)
         {
             _tilesService = tilesService;
             _appLogger = appLogger;
             _cache = cache;
             _cacheSettings = cacheSettings.Value;
+            _environment = environment;
         }
 
         public async Task<byte[]> Handle(GetVectorTileQuery request, CancellationToken cancellationToken)
         {
             try
             {
+                // Measure cache hit processing time
+                var stopwatch = Stopwatch.StartNew();
+
                 // Cache processing
                 string cacheKey = $"tile_{request.Z}_{request.X}_{request.Y}_{request.UUID}";
-                // Get max zoom level for caching from settings
+
                 if (request.Z <= _cacheSettings.MaxCacheZoomLevel)
                 {
                     byte[]? cachedTileData = await _cache.GetAsync(cacheKey, cancellationToken);
 
                     if (cachedTileData != null)
                     {
-                        Debug.WriteLine($"Cache hit:tile_{request.Z}_{request.X}_{request.Y}_{request.UUID}");
+                        stopwatch.Stop();
+
+                        if (_environment.IsDevelopment())
+                        {
+                            var debugMessage = new System.Text.StringBuilder();
+                            debugMessage.AppendLine($"Tile \"z:{request.Z} x:{request.X} y:{request.Y}\" cache hit. total processing time: {stopwatch.ElapsedMilliseconds}ms");
+                            Debug.Write(debugMessage.ToString());
+                        }
+
                         return cachedTileData;
                     }
                 }
+                else
+                {
+                    stopwatch.Stop();
+                }
 
-                byte[] tileData = await _tilesService.CreateTileAsync(request.Z, request.X, request.Y, request.UUID, cancellationToken);
+                byte[] tileData = await _tilesService.CreateTileAsync(request.Z, request.X, request.Y, request.UUID);
 
-                // Determine cache expiration time based on zoom level using configuration
                 TimeSpan expirationTime = _cacheSettings.DefaultSlidingExpiration;
-                
-                // Find matching zoom level expiration setting
+
                 var expirationSetting = _cacheSettings.ZoomLevelExpirations
                     ?.FirstOrDefault(e => request.Z >= e.MinZoom && request.Z <= e.MaxZoom);
-                
+
                 if (expirationSetting != null)
                 {
                     expirationTime = TimeSpan.FromHours(expirationSetting.ExpirationHours);
@@ -75,7 +89,6 @@ namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
             catch (Exception ex)
             {
                 _appLogger.LogError(ex);
-                // Preserve the original exception by re-throwing it
                 throw;
             }
         }

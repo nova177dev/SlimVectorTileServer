@@ -9,3 +9,6 @@ applog*.json
 .vs
 .html
 *.Development.json
+# Ignore changes to specific files while keeping them in the repository
+/wwwroot/map.html
+/.env

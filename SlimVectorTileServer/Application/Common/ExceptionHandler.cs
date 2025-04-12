@@ -1,5 +1,4 @@
-﻿using DotNetEnv;
-using SlimVectorTileServer.Domain.Entities.Common;
+﻿using SlimVectorTileServer.Domain.Entities.Common;
 using System.Text.Json;
 
 namespace SlimVectorTileServer.Application.Common
@@ -26,6 +25,7 @@ namespace SlimVectorTileServer.Application.Common
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred.");
+
                 await HandleExceptionAsync(context, ex);
             }
         }
@@ -40,12 +40,13 @@ namespace SlimVectorTileServer.Application.Common
                 Details = _env.IsDevelopment() ? exception.Message : null
             };
 
-            _logger.LogError(exception, exception.Message);
+            _logger.LogError(exception, "An unexpected error occurred.");
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
         }
+
     }
 }

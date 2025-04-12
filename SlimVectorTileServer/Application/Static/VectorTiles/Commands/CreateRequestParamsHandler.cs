@@ -1,20 +1,20 @@
-﻿using SlimVectorTileServer.Infrastructure.Data;
-using MediatR;
+﻿using MediatR;
 using SlimVectorTileServer.Domain.Entities.Common;
+using SlimVectorTileServer.Domain.Repositories;
 using System.Text.Json;
 
 namespace SlimVectorTileServer.Application.Static.VectorTiles.Commands
 {
     public class CreateRequestParamsHandler (
-        AppDbDataContext dbDataContext
+        IVectorTileRepository vectorTileRepository
     ) : IRequestHandler<CreateRequestParamsCommand, ApiResponse>
     {
-        private readonly AppDbDataContext _dbDataContext = dbDataContext; // Automatically initialized
+        private readonly IVectorTileRepository _vectorTileRepository = vectorTileRepository; // Automatically initialized
 
         public Task<ApiResponse> Handle(CreateRequestParamsCommand request, CancellationToken cancellationToken)
         {
-            // Get the JSON data from the database
-            JsonElement jsonData = _dbDataContext.RequestDbForJson("dbo", "request_params_create", request.RequestParams);
+            // Get the JSON data from the repository
+            JsonElement jsonData = _vectorTileRepository.CreateRequestParams(request.RequestParams);
 
             // Create a new ApiResponse with the required properties
             var response = new ApiResponse

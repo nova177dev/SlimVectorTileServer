@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Infrastructure\Cache\" />
     <Folder Include="Logs\" />
     <Folder Include="wwwroot\css\" />
     <Folder Include="wwwroot\js\" />

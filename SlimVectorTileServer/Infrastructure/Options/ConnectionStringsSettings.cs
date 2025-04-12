@@ -1,5 +1,3 @@
-using System;
-
 namespace SlimVectorTileServer.Infrastructure.Options
 {
     public class ConnectionStringsSettings

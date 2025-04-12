@@ -18,37 +18,34 @@ namespace SlimVectorTileServer.Infrastructure.Data
 
         public DataSet RequestDbForDataSet(string schema, string storedProcedureName, object requestParams)
         {
-            using (var command = _dbConnection.CreateCommand())
+            using var command = _dbConnection.CreateCommand();
+            command.CommandText = $"{schema}.{storedProcedureName}";
+            command.CommandType = CommandType.StoredProcedure;
+
+            foreach (var param in requestParams.GetType().GetProperties())
             {
-                command.CommandText = $"{schema}.{storedProcedureName}";
-                command.CommandType = CommandType.StoredProcedure;
-
-                foreach (var param in requestParams.GetType().GetProperties())
-                {
-                    var parameter = command.CreateParameter();
-                    parameter.ParameterName = param.Name;
-                    parameter.Value = param.GetValue(requestParams) ?? DBNull.Value;
-                    command.Parameters.Add(parameter);
-                }
-
-                var dataSet = new DataSet();
-                using (var adapter = new SqlDataAdapter((SqlCommand)command))
-                {
-                    adapter.Fill(dataSet);
-                }
-
-                if (dataSet.Tables.Count == 0)
-                {
-                    throw new InvalidOperationException("The database query didn't return any data.");
-                }
-
-                return dataSet;
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = param.Name;
+                parameter.Value = param.GetValue(requestParams) ?? DBNull.Value;
+                command.Parameters.Add(parameter);
             }
+
+            var dataSet = new DataSet();
+            using (var adapter = new SqlDataAdapter((SqlCommand)command))
+            {
+                adapter.Fill(dataSet);
+            }
+
+            if (dataSet.Tables.Count == 0)
+            {
+                throw new InvalidOperationException("The database query didn't return any data.");
+            }
+
+            return dataSet;
         }
 
         public JsonElement RequestDbForJson(string schema, string storedProcedureName, object requestParams)
         {
-            string str = _dbConnection.ConnectionString;
             string? jsonResponse = _dbConnection.QueryFirstOrDefault<string>(
                 schema + "." + storedProcedureName,
                 new { @params = _jsonHelper.SerializeObject(requestParams) },
@@ -58,7 +55,7 @@ namespace SlimVectorTileServer.Infrastructure.Data
             return _jsonHelper.DeserializeJson<JsonElement>(jsonResponse);
         }
 
-        public byte[] requestDb(string schema, string storedProcedureName, object requestParams)
+        public byte[] RequestDb(string schema, string storedProcedureName, object requestParams)
         {
             byte[]? dbResponse = _dbConnection.QueryFirstOrDefault<byte[]>(
                 schema + "." + storedProcedureName,
@@ -66,12 +63,7 @@ namespace SlimVectorTileServer.Infrastructure.Data
                 commandType: CommandType.StoredProcedure
             );
 
-            if (dbResponse == null)
-            {
-                throw new InvalidOperationException("The database query didn't return any data.");
-            }
-
-            return dbResponse;
+            return dbResponse ?? throw new InvalidOperationException("The database query didn't return any data.");
         }
     }
 }

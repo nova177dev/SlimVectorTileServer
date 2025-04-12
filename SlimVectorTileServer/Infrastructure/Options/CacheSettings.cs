@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace SlimVectorTileServer.Infrastructure.Options
 {
     /// <summary>
@@ -61,11 +58,11 @@ namespace SlimVectorTileServer.Infrastructure.Options
         /// <summary>
         /// Cache expiration settings for different zoom levels
         /// </summary>
-        public List<CacheExpirationSetting> ZoomLevelExpirations { get; set; } = new List<CacheExpirationSetting>
-        {
-            new CacheExpirationSetting { MinZoom = 0, MaxZoom = 3, ExpirationHours = 168 }, // 7 days
-            new CacheExpirationSetting { MinZoom = 4, MaxZoom = 6, ExpirationHours = 72 },  // 3 days
+        public List<CacheExpirationSetting> ZoomLevelExpirations { get; set; } =
+        [
+            new() { MinZoom = 0, MaxZoom = 3, ExpirationHours = 168 }, // 7 days
+            new() { MinZoom = 4, MaxZoom = 6, ExpirationHours = 72 },  // 3 days
             // Default for other levels is DefaultSlidingExpiration
-        };
+        ];
     }
 }

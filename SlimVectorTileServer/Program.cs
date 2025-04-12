@@ -1,8 +1,10 @@
 using DotNetEnv;
 using SlimVectorTileServer.Application.Common;
 using SlimVectorTileServer.Domain.Entities.Common;
+using SlimVectorTileServer.Domain.Repositories;
 using SlimVectorTileServer.Infrastructure.Data;
 using SlimVectorTileServer.Infrastructure.Options;
+using SlimVectorTileServer.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.SqlClient;
@@ -60,6 +62,7 @@ try
     builder.Services.AddScoped<AppDbDataContext>();
     builder.Services.AddScoped<ResponseHandler>();
     builder.Services.AddSingleton<JsonHelper>();
+    builder.Services.AddScoped<IVectorTileRepository, VectorTileRepository>();
     builder.Services.AddScoped<TilesService>();
 
     builder.Services.AddRateLimiter(options =>
@@ -139,7 +142,7 @@ try
         options.AddPolicy(corsSettings?.PolicyName ?? "AllowSpecificOrigins",
             builder =>
             {
-                builder.WithOrigins(corsSettings?.AllowedOrigins?.ToArray() ?? new[] { "http://localhost:3000" });
+                builder.WithOrigins(corsSettings?.AllowedOrigins?.ToArray() ?? ["http://localhost:3000"]);
 
                 if (corsSettings?.AllowAnyMethod ?? true)
                 {
