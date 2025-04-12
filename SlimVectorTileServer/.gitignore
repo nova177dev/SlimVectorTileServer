@@ -7,8 +7,8 @@ applog*.json
 *.user
 .env
 .vs
-.html
 *.Development.json
+
 # Ignore changes to specific files while keeping them in the repository
 /wwwroot/js/map-handler.js
 /.env
