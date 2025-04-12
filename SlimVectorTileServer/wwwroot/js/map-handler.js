@@ -1,14 +1,34 @@
-// Mapbox access token
-mapboxgl.accessToken = 'pk.eyJ1Ijoibm92YTE3N3J1cyIsImEiOiJja3oyc2Q4Y3UwMTVuMnZwMjFiOWl2eHo1In0.cpXR0UPWNtpLKonGRe5hpA';
+/**
+ * Map Handler - Manages Mapbox map and vector tile interactions
+ */
+
+// Configuration
+const CONFIG = {
+    API_BASE_URL: 'http://localhost:5035/api',
+    MAP_SETTINGS: {
+        initialCenter: [-74.6071028, 40.6931568],
+        initialZoom: 2,
+        minZoom: 2,
+        maxZoom: 15
+    },
+    LAYER_SETTINGS: {
+        circleRadius: 3,
+        circleColor: '#ff0000'
+    }
+};
+
+// Mapbox access token - Should be stored in a secure configuration
+// Replace this with your own token or implement a more secure approach
+mapboxgl.accessToken = '[PUT_YOUR_MAPBOX_API_TOKEN_HERE]';
 
 // Initialize map
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
-    center: [-74.6071028, 40.6931568],
-    zoom: 2,
-    minZoom: 2,
-    maxZoom: 15,
+    center: CONFIG.MAP_SETTINGS.initialCenter,
+    zoom: CONFIG.MAP_SETTINGS.initialZoom,
+    minZoom: CONFIG.MAP_SETTINGS.minZoom,
+    maxZoom: CONFIG.MAP_SETTINGS.maxZoom,
     renderWorldCopies: false
 });
 
@@ -39,6 +59,16 @@ function cleanUpMap() {
 }
 
 /**
+ * Display a notification message to the user
+ * @param {string} message - The message to display
+ * @param {string} type - The type of message ('error' or 'success')
+ */
+function showNotification(message, type = 'error') {
+    console.log(`${type.toUpperCase()}: ${message}`);
+    // In a production app, you might want to add a visual notification here
+}
+
+/**
  * Update map tiles with the given UUID
  * @param {string} uuid - UUID for the tile request
  */
@@ -47,18 +77,19 @@ function updateTiles(uuid) {
     const center = map.getCenter();
     const bounds = map.getBounds();
     const centerTile = lngLatToTile(center.lng, center.lat, zoom);
-    const tilesUrlTemplate = 'http://localhost:5035/api/tiles/{z}/{x}/{y}/'+uuid+'.mvt';
+    const tilesUrlTemplate = `${CONFIG.API_BASE_URL}/tiles/{z}/{x}/{y}/${uuid}.mvt`;
 
     try {
         map.addSource('sites-source', {
             type: 'vector',
             tiles: [tilesUrlTemplate],
-            minzoom: 2,
-            maxzoom: 22
+            minzoom: CONFIG.MAP_SETTINGS.minZoom,
+            maxzoom: CONFIG.MAP_SETTINGS.maxZoom + 7 // Allow higher zoom for detailed viewing
         });
     }
     catch (error) {
-        console.log('Failed to add vector tile Source: ' + error.toString());
+        showNotification(`Failed to add vector tile source: ${error.message}`);
+        return false;
     }
 
     try {
@@ -68,13 +99,15 @@ function updateTiles(uuid) {
             source: 'sites-source',
             'source-layer': 'sites',
             paint: {
-                'circle-radius': 3,
-                'circle-color': '#ff0000'
+                'circle-radius': CONFIG.LAYER_SETTINGS.circleRadius,
+                'circle-color': CONFIG.LAYER_SETTINGS.circleColor
             }
         });
+        return true;
     }
     catch (error) {
-        console.log('Failed to add vector tile Layer: ' + error.toString());
+        showNotification(`Failed to add vector tile layer: ${error.message}`);
+        return false;
     }
 }
 
@@ -86,9 +119,16 @@ async function createRequestParams() {
     const requestParams = document.getElementById('requestParams').value;
 
     try {
-        const parsedParams = JSON.parse(requestParams);
+        // Validate JSON input
+        let parsedParams;
+        try {
+            parsedParams = JSON.parse(requestParams);
+        } catch (parseError) {
+            showNotification('Invalid JSON format. Please check your input.');
+            return null;
+        }
 
-        const response = await fetch('http://localhost:5035/api/tiles/request-params', {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/tiles/request-params`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -103,21 +143,32 @@ async function createRequestParams() {
             throw new Error(`Failed with status: ${response.status} - ${response.statusText}`);
         }
     } catch (error) {
-        console.error('Error:', error);
+        showNotification(`Error: ${error.message}`);
         return null;
     }
 }
 
-// Event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('submitButton').addEventListener('click', () => {
-        createRequestParams().then(uuid => {
-            if (uuid) {
-                cleanUpMap();
-                updateTiles(uuid);
-            } else {
-                console.error('Failed to get Request Params UUID');
+/**
+ * Initialize the application
+ */
+function initApp() {
+    // Add map controls
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+
+    // Set up event listeners
+    document.getElementById('submitButton').addEventListener('click', async () => {
+        const uuid = await createRequestParams();
+        if (uuid) {
+            cleanUpMap();
+            if (updateTiles(uuid)) {
+                showNotification('Map updated successfully', 'success');
             }
-        });
+        } else {
+            showNotification('Failed to get request parameters UUID');
+        }
     });
-});
+}
+
+// Initialize the application when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', initApp);
