@@ -2,6 +2,7 @@ using DotNetEnv;
 using SlimVectorTileServer.Application.Common;
 using SlimVectorTileServer.Domain.Entities.Common;
 using SlimVectorTileServer.Infrastructure.Data;
+using SlimVectorTileServer.Infrastructure.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.SqlClient;
@@ -34,6 +35,20 @@ try
 
     builder.Host.UseSerilog();
 
+    // Register options
+    builder.Services.Configure<AppSettings>(
+        builder.Configuration.GetSection(AppSettings.SectionName));
+    builder.Services.Configure<CorsSettings>(
+        builder.Configuration.GetSection(CorsSettings.SectionName));
+    builder.Services.Configure<CacheSettings>(
+        builder.Configuration.GetSection(CacheSettings.SectionName));
+    builder.Services.Configure<SwaggerSettings>(
+        builder.Configuration.GetSection(SwaggerSettings.SectionName));
+    builder.Services.Configure<TileSettings>(
+        builder.Configuration.GetSection(TileSettings.SectionName));
+    builder.Services.Configure<ConnectionStringsSettings>(
+        builder.Configuration.GetSection(ConnectionStringsSettings.SectionName));
+
     builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(Assembly.GetExecutingAssembly()));
     builder.Services.AddTransient<IDbConnection>(provider =>
         new SqlConnection(builder.Configuration.GetConnectionString("SlimVectorTileServer"))
@@ -51,11 +66,12 @@ try
     {
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         {
+            var appSettings = builder.Configuration.GetSection(AppSettings.SectionName).Get<AppSettings>();
             return RateLimitPartition.GetFixedWindowLimiter(
                 partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 600,
+                    PermitLimit = appSettings?.RateLimitPerMinute ?? 600,
                     Window = TimeSpan.FromMinutes(1)
                 });
         });
@@ -102,37 +118,53 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
-        c.SwaggerDoc("v1", new OpenApiInfo
+        var swaggerSettings = builder.Configuration.GetSection(SwaggerSettings.SectionName).Get<SwaggerSettings>();
+        c.SwaggerDoc(swaggerSettings?.Version ?? "v1", new OpenApiInfo
         {
-            Title = "Slim Vector Tile Server",
-            Version = "v1",
-            Description = "A lightweight, high-performance vector tile server built with .NET Core that dynamically generates vector tiles from MS Sql Server database data.",
-            License = new OpenApiLicense { Name = "MIT", Url = new Uri("https://github.com/nova177dev/SlimVectorTileServer/blob/master/LICENSE.txt") },
+            Title = swaggerSettings?.Title ?? "Slim Vector Tile Server",
+            Version = swaggerSettings?.Version ?? "v1",
+            Description = swaggerSettings?.Description ?? "A lightweight, high-performance vector tile server built with .NET Core that dynamically generates vector tiles from MS Sql Server database data.",
+            License = new OpenApiLicense {
+                Name = swaggerSettings?.LicenseName ?? "MIT",
+                Url = new Uri(swaggerSettings?.LicenseUrl ?? "https://github.com/nova177dev/SlimVectorTileServer/blob/master/LICENSE.txt")
+            },
             Contact = new OpenApiContact
             {
-                Name = "Anton V. Novoseltsev",
-                Email = "nova177dev@gmail.com"
+                Name = swaggerSettings?.ContactName ?? "Anton V. Novoseltsev",
+                Email = swaggerSettings?.ContactEmail ?? "nova177dev@gmail.com"
             }
         });
     });
 
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("AllowSpecificOrigins",
-            builder => builder
-                .WithOrigins("http://localhost:3000")
-                .AllowAnyMethod()
-                .AllowAnyHeader());
+        var corsSettings = builder.Configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>();
+        options.AddPolicy(corsSettings?.PolicyName ?? "AllowSpecificOrigins",
+            builder =>
+            {
+                builder.WithOrigins(corsSettings?.AllowedOrigins?.ToArray() ?? new[] { "http://localhost:3000" });
+
+                if (corsSettings?.AllowAnyMethod ?? true)
+                {
+                    builder.AllowAnyMethod();
+                }
+
+                if (corsSettings?.AllowAnyHeader ?? true)
+                {
+                    builder.AllowAnyHeader();
+                }
+            });
     });
 
     builder.Services.AddDistributedSqlServerCache(options =>
     {
+        var cacheSettings = builder.Configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>();
         options.ConnectionString = builder.Configuration.GetConnectionString(
-            "SlimVectorTileServerCache");
-        options.SchemaName = "dbo";
-        options.TableName = "vector_tile_cache";
-        options.DefaultSlidingExpiration = TimeSpan.FromHours(24);
-        options.ExpiredItemsDeletionInterval = TimeSpan.FromHours(72);
+            cacheSettings?.ConnectionStringName ?? "SlimVectorTileServerCache");
+        options.SchemaName = cacheSettings?.SchemaName ?? "dbo";
+        options.TableName = cacheSettings?.TableName ?? "vector_tile_cache";
+        options.DefaultSlidingExpiration = cacheSettings?.DefaultSlidingExpiration ?? TimeSpan.FromHours(24);
+        options.ExpiredItemsDeletionInterval = cacheSettings?.ExpiredItemsDeletionInterval ?? TimeSpan.FromHours(72);
     });
 
     var app = builder.Build();

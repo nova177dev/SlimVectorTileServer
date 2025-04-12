@@ -7,4 +7,5 @@ applog*.json
 *.user
 .env
 .vs
+.html
 *.Development.json

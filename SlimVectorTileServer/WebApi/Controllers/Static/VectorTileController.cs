@@ -19,7 +19,7 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
     {
         private readonly IMediator _mediator;
 
-        public VectorTileController(IMediator mediator, TilesService tilesHelper)
+        public VectorTileController(IMediator mediator)
         {
             _mediator = mediator;
         }

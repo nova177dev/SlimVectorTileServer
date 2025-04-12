@@ -1,4 +1,6 @@
 ﻿using SlimVectorTileServer.Infrastructure.Data;
+using SlimVectorTileServer.Infrastructure.Options;
+using Microsoft.Extensions.Options;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO.VectorTiles;
@@ -12,10 +14,14 @@ namespace SlimVectorTileServer.Application.Common
     public class TilesService
     {
         private readonly AppDbDataContext _dbDataContext;
+        private readonly TileSettings _tileSettings;
 
-        public TilesService(AppDbDataContext dbDataContext)
+        public TilesService(
+            AppDbDataContext dbDataContext,
+            IOptions<TileSettings> tileSettings)
         {
             _dbDataContext = dbDataContext;
+            _tileSettings = tileSettings.Value;
         }
         public async Task<byte[]> CreateTileAsync(int zoom, int xTile, int yTile, string uuid, CancellationToken cancellationToken)
         {
@@ -27,7 +33,7 @@ namespace SlimVectorTileServer.Application.Common
             var tile = new VectorTile { TileId = tileDefinition.Id };
 
             var factory = new GeometryFactory(new PrecisionModel(PrecisionModels.Floating));
-            var layer = new Layer { Name = "sites" };
+            var layer = new Layer { Name = _tileSettings.DefaultLayerName };
 
             double tileSize = 1 << zoom;
             double minX = xTile / tileSize * 360 - 180;
@@ -37,7 +43,10 @@ namespace SlimVectorTileServer.Application.Common
 
             try
             {
-                var pois = _dbDataContext.RequestDbForDataSet("dbo", "sites_get", new
+                var pois = _dbDataContext.RequestDbForDataSet(
+                    _tileSettings.SchemaName,
+                    _tileSettings.StoredProcedureName,
+                    new
                     {
                         x = xTile,
                         y = yTile,
@@ -51,7 +60,7 @@ namespace SlimVectorTileServer.Application.Common
                     var stopwatch = Stopwatch.StartNew();
                     var parallelOptions = new ParallelOptions
                     {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount
+                        MaxDegreeOfParallelism = _tileSettings.MaxDegreeOfParallelism ?? Environment.ProcessorCount
                     };
 
                     Parallel.ForEach(pois.Tables[0].AsEnumerable(), parallelOptions, row =>
@@ -87,8 +96,7 @@ namespace SlimVectorTileServer.Application.Common
                 byte[] mvtData;
                 using (var stream = new MemoryStream())
                 {
-                    uint bufferSize = 4096;
-                    MapboxTileWriter.Write(tile, stream, MapboxTileWriter.DefaultMinLinealExtent, MapboxTileWriter.DefaultMinPolygonalExtent, bufferSize);
+                    MapboxTileWriter.Write(tile, stream, MapboxTileWriter.DefaultMinLinealExtent, MapboxTileWriter.DefaultMinPolygonalExtent, _tileSettings.BufferSize);
                     mvtData = stream.ToArray();
                 }
 

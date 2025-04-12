@@ -1,8 +1,11 @@
 ﻿using SlimVectorTileServer.Application.Common;
 using SlimVectorTileServer.Application.Static.Queries;
+using SlimVectorTileServer.Infrastructure.Options;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
+using System.Linq;
 
 namespace SlimVectorTileServer.Application.Express.Queries
 {
@@ -11,12 +14,18 @@ namespace SlimVectorTileServer.Application.Express.Queries
         private readonly TilesService _tilesService;
         private readonly AppLogger _appLogger;
         private readonly IDistributedCache _cache;
+        private readonly CacheSettings _cacheSettings;
 
-        public GetVectorTileQueryHandler(TilesService tilesService, AppLogger appLogger, IDistributedCache cache)
+        public GetVectorTileQueryHandler(
+            TilesService tilesService,
+            AppLogger appLogger,
+            IDistributedCache cache,
+            IOptions<CacheSettings> cacheSettings)
         {
             _tilesService = tilesService;
             _appLogger = appLogger;
             _cache = cache;
+            _cacheSettings = cacheSettings.Value;
         }
 
         public async Task<byte[]> Handle(GetVectorTileQuery request, CancellationToken cancellationToken)
@@ -25,10 +34,10 @@ namespace SlimVectorTileServer.Application.Express.Queries
             {
                 // Cache processing
                 string cacheKey = $"tile_{request.Z}_{request.X}_{request.Y}_{request.UUID}";
-                // Limit caching to zoom levels up to 10
-                if (request.Z <= 10)
+                // Get max zoom level for caching from settings
+                if (request.Z <= _cacheSettings.MaxCacheZoomLevel)
                 {
-                    byte[] cachedTileData = await _cache.GetAsync(cacheKey, cancellationToken);
+                    byte[]? cachedTileData = await _cache.GetAsync(cacheKey, cancellationToken);
 
                     if (cachedTileData != null)
                     {
@@ -39,19 +48,24 @@ namespace SlimVectorTileServer.Application.Express.Queries
 
                 byte[] tileData = await _tilesService.CreateTileAsync(request.Z, request.X, request.Y, request.UUID, cancellationToken);
 
-                TimeSpan expirationTime = request.Z switch
+                // Determine cache expiration time based on zoom level using configuration
+                TimeSpan expirationTime = _cacheSettings.DefaultSlidingExpiration;
+                
+                // Find matching zoom level expiration setting
+                var expirationSetting = _cacheSettings.ZoomLevelExpirations
+                    ?.FirstOrDefault(e => request.Z >= e.MinZoom && request.Z <= e.MaxZoom);
+                
+                if (expirationSetting != null)
                 {
-                    >= 0 and <= 3 => TimeSpan.FromDays(7),   // 1 week for zoom levels 0-3
-                    >= 4 and <= 6 => TimeSpan.FromHours(72), // 72 hours for zoom levels 4-6
-                    _ => TimeSpan.FromHours(24)              // 24 hours for all other levels
-                };
+                    expirationTime = TimeSpan.FromHours(expirationSetting.ExpirationHours);
+                }
 
                 var cacheOptions = new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = expirationTime
                 };
 
-                if (request.Z <= 10)
+                if (request.Z <= _cacheSettings.MaxCacheZoomLevel)
                 {
                     await _cache.SetAsync(cacheKey, tileData, cacheOptions, cancellationToken);
                 }
