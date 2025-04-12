@@ -116,6 +116,7 @@ namespace SlimVectorTileServer.Application.Common
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error creating tile: {ex.Message}");
+                // Already re-throwing the original exception, which is good
                 throw;
             }
         }

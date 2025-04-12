@@ -1,14 +1,11 @@
-﻿using SlimVectorTileServer.Domain.Entities.Static;
+﻿using SlimVectorTileServer.Domain.Entities.Static.VectorTileServer;
+using SlimVectorTileServer.Domain.Entities.Common;
 using MediatR;
 
-namespace SlimVectorTileServer.Application.Static.Commands
+namespace SlimVectorTileServer.Application.Static.VectorTiles.Commands
 {
-    public class CreateRequestParamsCommand : IRequest<VectorTileRequestParams>
+    public class CreateRequestParamsCommand(VectorTileRequestParams requestParams) : IRequest<ApiResponse>
     {
-        public VectorTileRequestParams RequestParams { get; set; }
-        public CreateRequestParamsCommand(VectorTileRequestParams requestParams)
-        {
-            RequestParams = requestParams;
-        }
+        public VectorTileRequestParams RequestParams { get; } = requestParams;
     }
 }

@@ -91,15 +91,12 @@ try
             {
                 var errorMessage = new ErrorMessage
                 {
-                    TraceUuid = context.HttpContext.TraceIdentifier,
+                    TraceUuid = Guid.NewGuid().ToString(),
                     ResponseCode = StatusCodes.Status400BadRequest,
-                    ResponseMessage = string.Join("; ",
-                        context.ModelState
-                            .Where(ms => ms.Value != null && ms.Value.Errors.Count > 0)
-                            .SelectMany(ms => ms.Value!.Errors.Select(e => e.ErrorMessage))
-                            .ToList()
-                    )
+                    ResponseMessage = "Model validation failed"
                 };
+
+                Log.Error("Model validation failed: {ErrorMessage}", errorMessage.ResponseMessage);
 
                 return new BadRequestObjectResult(errorMessage);
             };
@@ -178,10 +175,10 @@ try
         app.UseSwaggerUI();
     }
 
+    app.UseMiddleware<ExceptionHandler>();
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseMiddleware<ExceptionHandler>();
     app.MapControllers();
     app.UseStaticFiles(new StaticFileOptions
     {

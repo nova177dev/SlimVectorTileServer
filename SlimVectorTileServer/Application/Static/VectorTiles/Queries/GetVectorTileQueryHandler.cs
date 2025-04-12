@@ -1,5 +1,5 @@
 ﻿using SlimVectorTileServer.Application.Common;
-using SlimVectorTileServer.Application.Static.Queries;
+using SlimVectorTileServer.Application.Static.VectorTiles.Queries;
 using SlimVectorTileServer.Infrastructure.Options;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Linq;
 
-namespace SlimVectorTileServer.Application.Express.Queries
+namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
 {
     public class GetVectorTileQueryHandler : IRequestHandler<GetVectorTileQuery, byte[]>
     {
@@ -75,7 +75,8 @@ namespace SlimVectorTileServer.Application.Express.Queries
             catch (Exception ex)
             {
                 _appLogger.LogError(ex);
-                throw new Exception($"Tile generation failed");
+                // Preserve the original exception by re-throwing it
+                throw;
             }
         }
     }

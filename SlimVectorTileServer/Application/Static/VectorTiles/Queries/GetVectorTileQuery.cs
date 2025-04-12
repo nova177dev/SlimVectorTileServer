@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace SlimVectorTileServer.Application.Static.Queries
+namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
 {
     public class GetVectorTileQuery : IRequest<byte[]>
     {

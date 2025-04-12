@@ -1,43 +1,51 @@
-﻿using SlimVectorTileServer.Domain.Entities.Common;
+﻿using DotNetEnv;
+using SlimVectorTileServer.Domain.Entities.Common;
 using System.Text.Json;
 
-public class ExceptionHandler
+namespace SlimVectorTileServer.Application.Common
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionHandler> _logger;
-
-    public ExceptionHandler(RequestDelegate next, ILogger<ExceptionHandler> logger)
+    public class ExceptionHandler
     {
-        _next = next;
-        _logger = logger;
-    }
+        private readonly RequestDelegate _next;
+        private readonly ILogger<ExceptionHandler> _logger;
+        private readonly IHostEnvironment _env;
 
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
+        public ExceptionHandler(RequestDelegate next, ILogger<ExceptionHandler> logger, IHostEnvironment env)
         {
-            await _next(context);
+            _next = next;
+            _logger = logger;
+            _env = env;
         }
-        catch (Exception ex)
+
+        public async Task InvokeAsync(HttpContext context)
         {
-            _logger.LogError(ex, "An unhandled exception has occurred.");
-            await HandleExceptionAsync(context, ex);
+            try
+            {
+                await _next(context);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred.");
+                await HandleExceptionAsync(context, ex);
+            }
         }
-    }
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        var errorResponse = new ErrorMessage
+        private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            TraceUuid = context.TraceIdentifier,
-            ResponseCode = StatusCodes.Status500InternalServerError,
-            ResponseMessage = "An unexpected error occurred.",
-            Details = exception.Message
-        };
+            var errorResponse = new ErrorMessage
+            {
+                TraceUuid = Guid.NewGuid().ToString(),
+                ResponseCode = StatusCodes.Status500InternalServerError,
+                ResponseMessage = "An unexpected error occurred.",
+                Details = _env.IsDevelopment() ? exception.Message : null
+            };
 
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            _logger.LogError(exception, exception.Message);
 
-        return context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+        }
     }
 }
