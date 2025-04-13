@@ -11,7 +11,9 @@ begin
             @cbs_code varchar(16),
             @zip_code varchar(16),
             --
-            @bounds geography
+            @bounds geography,
+            --
+            @precission int
 
     set @params =
     (
@@ -25,31 +27,45 @@ begin
             @zip_code = json_value(value,'$.zip_code')
     from openjson(@params)
 
-    set @bounds = dbo.mercator_tile_to_geography(@x, @y, @z)
+    set @bounds = dbo.mercator_tile2geography(@x, @y, @z)
+    set	@precission = dbo.interpolate_zoom2precission(@z)
 
     if @z >= 3
     begin
-        set @bounds = dbo.mercator_tile_to_geography(@x, @y, @z)
+        set @bounds = dbo.mercator_tile2geography(@x, @y, @z)
 
-        select	lat as geo_lat,
-                lon as geo_lon
-            from dbo.sites (nolock)
-        where (geo.Filter(@bounds) = 1)
-            and (@dma_code is null or dma_code = @dma_code)
-            and (@cbs_code is null or cbs_code = @cbs_code)
-            and (@zip_code is null or zip_code = @zip_code)
+        select	round(geo_lat, @precission) as geo_lat,
+                round(geo_lon, @precission) as geo_lon,
+                count(*) as [count]
+        from (
+            select	lat as geo_lat,
+                    lon as geo_lon
+                from dbo.sites (nolock)
+            where (geo.Filter(@bounds) = 1)
+                and (@dma_code is null or dma_code = @dma_code)
+                and (@cbs_code is null or cbs_code = @cbs_code)
+                and (@zip_code is null or zip_code = @zip_code)
+        ) sub
+        group by round(geo_lat, @precission),
+                    round(geo_lon, @precission)
     end
     else
     begin
-        select	lat as geo_lat,
-                lon as geo_lon
-            from dbo.sites (nolock)
-        where (@dma_code is null or dma_code = @dma_code)
-            and (@cbs_code is null or cbs_code = @cbs_code)
-            and (@zip_code is null or zip_code = @zip_code)
+        select	round(geo_lat, @precission) as geo_lat,
+                round(geo_lon, @precission) as geo_lon,
+                count(*) as [count]
+        from (
+            select	lat as geo_lat,
+                    lon as geo_lon
+                from dbo.sites (nolock)
+            where (@dma_code is null or dma_code = @dma_code)
+                and (@cbs_code is null or cbs_code = @cbs_code)
+                and (@zip_code is null or zip_code = @zip_code)
+        ) sub
+        group by round(geo_lat, @precission),
+                    round(geo_lon, @precission)
     end
 end
-
 go
 grant execute
     on object::dbo.sites_get to vector_tile_server_app

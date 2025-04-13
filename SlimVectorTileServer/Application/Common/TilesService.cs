@@ -140,6 +140,7 @@ namespace SlimVectorTileServer.Application.Common
                 {
                     double longitude = Convert.ToDouble(row["geo_lon"]);
                     double latitude = Convert.ToDouble(row["geo_lat"]);
+                    int count = Convert.ToInt32(row["count"]);
 
                     while (longitude < minX) longitude += 360;
                     while (longitude > maxX) longitude -= 360;
@@ -147,7 +148,7 @@ namespace SlimVectorTileServer.Application.Common
                     if (latitude >= minY && latitude <= maxY)
                     {
                         Point point = factory.CreatePoint(new Coordinate(longitude, latitude));
-                        var feature = new Feature(point, new AttributesTable { });
+                        var feature = new Feature(point, new AttributesTable { { "count", count } });
 
                         lock (layer.Features)
                         {

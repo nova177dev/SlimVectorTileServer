@@ -1,4 +1,4 @@
-﻿create function dbo.mercator_tile_to_geography
+﻿create function dbo.mercator_tile2geography
 (
     @x int,
     @y int,

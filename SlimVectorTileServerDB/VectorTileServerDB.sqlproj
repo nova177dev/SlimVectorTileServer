@@ -75,5 +75,6 @@
     <Build Include="dbo\Tables\request_params.sql" />
     <Build Include="dbo\Stored Procedures\request_params_create.sql" />
     <Build Include="dbo\Functions\Scalar-valued Functions\mercator_tile_to_geography.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\interpolate_zoom2precission.sql" />
   </ItemGroup>
 </Project>

@@ -19,7 +19,7 @@ const CONFIG = {
 
 // Mapbox access token - Should be stored in a secure configuration
 // Replace this with your own token or implement a more secure approach
-mapboxgl.accessToken = '[YOUR_MAPBOX_API_KEY]';
+mapboxgl.accessToken = '';
 
 // Initialize map
 const map = new mapboxgl.Map({
