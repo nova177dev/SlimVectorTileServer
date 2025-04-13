@@ -365,3 +365,4 @@ FodyWeavers.xsd
 /SlimVectorTileServer/wwwroot/heatmap.html
 /SlimVectorTileServer/.env
 /SlimVectorTileServer/.env
+/SlimVectorTileServer/wwwroot/js/cluster-handler.js
