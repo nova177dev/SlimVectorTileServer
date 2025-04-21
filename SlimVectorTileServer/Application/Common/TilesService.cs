@@ -27,12 +27,12 @@ namespace SlimVectorTileServer.Application.Common
             _environment = environment;
         }
 
-        public async Task<byte[]> CreateTileAsync(int zoom, int xTile, int yTile, string uuid)
+        public async Task<byte[]> CreateTileAsync(int zoom, int xTile, int yTile, string uuid, int cluster)
         {
-            return await Task.FromResult(CreateTile(zoom, xTile, yTile, uuid));
+            return await Task.FromResult(CreateTile(zoom, xTile, yTile, uuid, cluster));
         }
 
-        public byte[] CreateTile(int zoom, int xTile, int yTile, string uuid)
+        public byte[] CreateTile(int zoom, int xTile, int yTile, string uuid, int cluster)
         {
             var totalStopwatch = Stopwatch.StartNew();
             var stepStopwatch = new Stopwatch();
@@ -60,7 +60,7 @@ namespace SlimVectorTileServer.Application.Common
             {
                 // Database query
                 stepStopwatch.Restart();
-                var pois = QueryDatabaseForTileData(xTile, yTile, zoom, uuid);
+                var pois = QueryDatabaseForTileData(xTile, yTile, zoom, uuid, cluster);
                 stepStopwatch.Stop();
                 databaseQueryTime = stepStopwatch.ElapsedMilliseconds;
 
@@ -119,9 +119,9 @@ namespace SlimVectorTileServer.Application.Common
             return (minX, maxX, minY, maxY);
         }
 
-        private DataSet QueryDatabaseForTileData(int xTile, int yTile, int zoom, string uuid)
+        private DataSet QueryDatabaseForTileData(int xTile, int yTile, int zoom, string uuid, int cluster)
         {
-            return _vectorTileRepository.GetTileData(xTile, yTile, zoom, uuid);
+            return _vectorTileRepository.GetTileData(xTile, yTile, zoom, uuid, cluster);
         }
 
         private void ProcessTileFeatures(DataSet pois, double minX, double maxX, double minY, double maxY, VectorTile tile)

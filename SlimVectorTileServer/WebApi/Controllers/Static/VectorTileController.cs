@@ -40,21 +40,39 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
         }
 
         /// <summary>
-        /// Returns a MapBox Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
+        /// Returns a MapBox Points Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
         /// </summary>
         [AllowAnonymous]
-        [HttpGet("{zoom}/{xTile}/{yTile}/{uuid}")]
+        [HttpGet("{zoom}/{xTile}/{yTile}/{cluster}/{uuid}")]
         [Produces("application/x-protobuf")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileResult))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorMessage), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetVectorTiles(int zoom, int xTile, int yTile, string uuid)
+        public async Task<IActionResult> GetVectorTiles(int zoom, int xTile, int yTile, int cluster, string uuid)
         {
             Response.Headers.Append("Content-Encoding", "gzip");
             Response.Headers.Vary = HeaderNames.AcceptEncoding;
 
-            byte[] response = await _mediator.Send(new GetVectorTileQuery(zoom, xTile, yTile, uuid));
+            byte[] response = await _mediator.Send(new GetVectorTileQuery(zoom, xTile, yTile, uuid, cluster));
             return File(response, "application/x-protobuf");
         }
+
+        ///// <summary>
+        ///// Returns a MapBox Clusters Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
+        ///// </summary>
+        //[AllowAnonymous]
+        //[HttpGet("clusters/{zoom}/{xTile}/{yTile}/{uuid}")]
+        //[Produces("application/x-protobuf")]
+        //[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileResult))]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(typeof(ErrorMessage), StatusCodes.Status500InternalServerError)]
+        //public async Task<IActionResult> GetClustersVectorTiles(int zoom, int xTile, int yTile, string uuid)
+        //{
+        //    Response.Headers.Append("Content-Encoding", "gzip");
+        //    Response.Headers.Vary = HeaderNames.AcceptEncoding;
+
+        //    byte[] response = await _mediator.Send(new GetVectorTileQuery(zoom, xTile, yTile, uuid, 1));
+        //    return File(response, "application/x-protobuf");
+        //}
     }
 }

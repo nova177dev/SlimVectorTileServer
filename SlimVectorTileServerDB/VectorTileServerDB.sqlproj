@@ -74,7 +74,14 @@
     <Build Include="Security\Users\vector_tile_server_app.sql" />
     <Build Include="dbo\Tables\request_params.sql" />
     <Build Include="dbo\Stored Procedures\request_params_create.sql" />
-    <Build Include="dbo\Functions\Scalar-valued Functions\mercator_tile_to_geography.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\mercator_tile2geography.sql" />
     <Build Include="dbo\Functions\Scalar-valued Functions\interpolate_zoom2precission.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\geohash_base32.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\geohash_base32_index.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\geohash_bit.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\geohash_decode.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\geohash_encode.sql" />
+    <Build Include="dbo\Functions\Scalar-valued Functions\interpolate_zoom2geohash.sql" />
+    <Build Include="dbo\Stored Procedures\site_clusters_get.sql" />
   </ItemGroup>
 </Project>

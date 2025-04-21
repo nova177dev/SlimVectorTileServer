@@ -14,13 +14,13 @@ namespace SlimVectorTileServer.Domain.Repositories
         JsonElement CreateRequestParams(VectorTileRequestParams requestParams);
 
         /// <summary>
-        /// Retrieves tile data from the database
+        /// Retrieves points tile data from the database
         /// </summary>
         /// <param name="xTile">X coordinate of the tile</param>
         /// <param name="yTile">Y coordinate of the tile</param>
         /// <param name="zoom">Zoom level</param>
         /// <param name="uuid">UUID of the tile request</param>
         /// <returns>Dataset containing tile data</returns>
-        DataSet GetTileData(int xTile, int yTile, int zoom, string uuid);
+        DataSet GetTileData(int xTile, int yTile, int zoom, string uuid, int cluster);
     }
 }

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\unimap.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="MediatR" Version="12.4.1" />
@@ -27,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\unimap.html" />
     <None Include="wwwroot\map.html" />
   </ItemGroup>
 

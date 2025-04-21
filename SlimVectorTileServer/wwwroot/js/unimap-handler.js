@@ -33,6 +33,7 @@ function lngLatToTile(lng, lat, zoom) {
     const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * tileCount);
     return { x, y };
 }
+
 function cleanUpMap() {
     if (map.getLayer('sites-layer')) {
         map.removeLayer('sites-layer');
@@ -45,12 +46,15 @@ function cleanUpMap() {
 function showNotification(message, type = 'error') {
     console.log(`${type.toUpperCase()}: ${message}`);
 }
+
 function updateTiles(uuid) {
     const zoom = Math.floor(map.getZoom());
     const center = map.getCenter();
     const bounds = map.getBounds();
     const centerTile = lngLatToTile(center.lng, center.lat, zoom);
-    const tilesUrlTemplate = `${CONFIG.API_BASE_URL}/tiles/{z}/{x}/{y}/0/${uuid}`;
+    const cluster = getClusterOption(zoom);
+
+    const tilesUrlTemplate = `${CONFIG.API_BASE_URL}/tiles/{z}/{x}/{y}/${cluster}/${uuid}`;
 
     try {
         map.addSource('sites-source', {
@@ -131,6 +135,10 @@ function initApp() {
             showNotification('Failed to get request parameters UUID');
         }
     });
+}
+
+function getClusterOption(zoom) {
+    return zoom < 10 ? 1 : 0;
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

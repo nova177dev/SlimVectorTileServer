@@ -8,12 +8,15 @@ namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
         public int X { get; }
         public int Y { get; }
         public string UUID { get; }
-        public GetVectorTileQuery(int z, int x, int y, string uuid)
+        public int Cluster { get; }
+
+        public GetVectorTileQuery(int z, int x, int y, string uuid, int cluster)
         {
             Z = z;
             X = x;
             Y = y;
             UUID = uuid;
+            Cluster = cluster;
         }
     }
 }

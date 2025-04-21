@@ -37,7 +37,7 @@ namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
                 var stopwatch = Stopwatch.StartNew();
 
                 // Cache processing
-                string cacheKey = $"tile_{request.Z}_{request.X}_{request.Y}_{request.UUID}";
+                string cacheKey = $"tile_{request.Z}_{request.X}_{request.Y}_{request.Cluster}_{request.UUID}";
 
                 if (request.Z <= _cacheSettings.MaxCacheZoomLevel)
                 {
@@ -62,7 +62,7 @@ namespace SlimVectorTileServer.Application.Static.VectorTiles.Queries
                     stopwatch.Stop();
                 }
 
-                byte[] tileData = await _tilesService.CreateTileAsync(request.Z, request.X, request.Y, request.UUID);
+                byte[] tileData = await _tilesService.CreateTileAsync(request.Z, request.X, request.Y, request.UUID, request.Cluster);
 
                 TimeSpan expirationTime = _cacheSettings.DefaultSlidingExpiration;
 

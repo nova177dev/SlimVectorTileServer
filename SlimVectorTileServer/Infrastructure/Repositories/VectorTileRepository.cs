@@ -25,7 +25,6 @@ namespace SlimVectorTileServer.Infrastructure.Repositories
             _environment = environment;
         }
 
-        /// <inheritdoc/>
         public JsonElement CreateRequestParams(VectorTileRequestParams requestParams)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -40,28 +39,28 @@ namespace SlimVectorTileServer.Infrastructure.Repositories
                 debugMessage.AppendLine($"DB operation time for CreateRequestParams: {stopwatch.ElapsedMilliseconds}ms");
                 Debug.Write(debugMessage.ToString());
             }
+
             return result;
         }
 
-        /// <inheritdoc/>
-        public DataSet GetTileData(int xTile, int yTile, int zoom, string uuid)
+        public DataSet GetTileData(int xTile, int yTile, int zoom, string uuid, int cluster)
         {
             var stopwatch = Stopwatch.StartNew();
             var result = _dbDataContext.RequestDbForDataSet(
                 _tileSettings.SchemaName,
-                _tileSettings.StoredProcedureName,
-                new { x = xTile, y = yTile, z = zoom, uuid }
+                _tileSettings.PointsStoredProcedureName,
+                new { x = xTile, y = yTile, z = zoom, uuid, cluster }
             );
             stopwatch.Stop();
 
             // Only log debug information in Development environment
             if (_environment.IsDevelopment())
             {
-                // Use StringBuilder to create a single atomic message
                 var debugMessage = new System.Text.StringBuilder();
                 debugMessage.AppendLine($"DB operation time for GetTileData z:{zoom} x:{xTile} y:{yTile} uuid:{uuid}: {stopwatch.ElapsedMilliseconds}ms");
                 Debug.Write(debugMessage.ToString());
             }
+
             return result;
         }
     }

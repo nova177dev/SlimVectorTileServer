@@ -26,8 +26,8 @@ namespace SlimVectorTileServer.Infrastructure.Options
         public string SchemaName { get; set; } = "dbo";
 
         /// <summary>
-        /// The stored procedure name for getting tile data
+        /// The stored procedure name for getting points tile data
         /// </summary>
-        public string StoredProcedureName { get; set; } = "sites_get";
+        public string PointsStoredProcedureName { get; set; } = "sites_get";
     }
 }
