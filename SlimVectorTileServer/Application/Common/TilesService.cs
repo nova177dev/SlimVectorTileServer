@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 using NetTopologySuite.IO.VectorTiles.Mapbox;
 using NetTopologySuite.IO.VectorTiles;
 using SlimVectorTileServer.Domain.Repositories;
@@ -16,6 +17,7 @@ namespace SlimVectorTileServer.Application.Common
         private readonly IVectorTileRepository _vectorTileRepository;
         private readonly TileSettings _tileSettings;
         private readonly IWebHostEnvironment _environment;
+        private readonly WKTReader _wktReader;
 
         public TilesService(
             IVectorTileRepository vectorTileRepository,
@@ -25,11 +27,17 @@ namespace SlimVectorTileServer.Application.Common
             _vectorTileRepository = vectorTileRepository;
             _tileSettings = tileSettings.Value;
             _environment = environment;
+            _wktReader = new WKTReader(new GeometryFactory(new PrecisionModel(PrecisionModels.Floating)));
         }
 
         public async Task<byte[]> CreateTileAsync(int zoom, int xTile, int yTile, string uuid, int cluster)
         {
             return await Task.FromResult(CreateTile(zoom, xTile, yTile, uuid, cluster));
+        }
+
+        public async Task<byte[]> CreatePolygonTileAsync(int zoom, int xTile, int yTile, string uuid)
+        {
+            return await Task.FromResult(CreatePolygonTile(zoom, xTile, yTile, uuid));
         }
 
         public byte[] CreateTile(int zoom, int xTile, int yTile, string uuid, int cluster)
@@ -83,18 +91,18 @@ namespace SlimVectorTileServer.Application.Common
                 totalStopwatch.Stop();
                 long totalTime = totalStopwatch.ElapsedMilliseconds;
 
-            if (_environment.IsDevelopment())
-            {
-                var debugMessage = new System.Text.StringBuilder();
-                debugMessage.AppendLine($"Tile \"z:{zoom} x:{xTile} y:{yTile}\" total processing time: {totalTime}ms");
-                debugMessage.AppendLine($"   - database query: {databaseQueryTime}ms");
-                debugMessage.AppendLine($"   - initialization: {initializationTime}ms");
-                debugMessage.AppendLine($"   - boundary calculation: {boundaryCalculationTime}ms");
-                debugMessage.AppendLine($"   - feature processing: {featureProcessingTime}ms");
-                debugMessage.AppendLine($"   - tile compression: {compressionTime}ms");
+                if (_environment.IsDevelopment())
+                {
+                    var debugMessage = new System.Text.StringBuilder();
+                    debugMessage.AppendLine($"Tile \"z:{zoom} x:{xTile} y:{yTile}\" total processing time: {totalTime}ms");
+                    debugMessage.AppendLine($"   - database query: {databaseQueryTime}ms");
+                    debugMessage.AppendLine($"   - initialization: {initializationTime}ms");
+                    debugMessage.AppendLine($"   - boundary calculation: {boundaryCalculationTime}ms");
+                    debugMessage.AppendLine($"   - feature processing: {featureProcessingTime}ms");
+                    debugMessage.AppendLine($"   - tile compression: {compressionTime}ms");
 
-                Debug.Write(debugMessage.ToString());
-            }
+                    Debug.Write(debugMessage.ToString());
+                }
 
                 return result;
             }
@@ -103,6 +111,82 @@ namespace SlimVectorTileServer.Application.Common
                 if (_environment.IsDevelopment())
                 {
                     Debug.WriteLine($"Error creating tile: {ex.Message}");
+                }
+                throw;
+            }
+        }
+
+        public byte[] CreatePolygonTile(int zoom, int xTile, int yTile, string uuid)
+        {
+            var totalStopwatch = Stopwatch.StartNew();
+            var stepStopwatch = new Stopwatch();
+
+            long initializationTime;
+            long boundaryCalculationTime;
+            long databaseQueryTime;
+            long featureProcessingTime;
+            long compressionTime;
+
+            // Initialization
+            stepStopwatch.Start();
+            var tileDefinition = new NetTopologySuite.IO.VectorTiles.Tiles.Tile(xTile, yTile, zoom);
+            var tile = new VectorTile { TileId = tileDefinition.Id };
+            stepStopwatch.Stop();
+            initializationTime = stepStopwatch.ElapsedMilliseconds;
+
+            // Boundary calculation
+            stepStopwatch.Restart();
+            var (minX, maxX, minY, maxY) = CalculateTileBoundaries(zoom, xTile, yTile);
+            stepStopwatch.Stop();
+            boundaryCalculationTime = stepStopwatch.ElapsedMilliseconds;
+
+            try
+            {
+                // Database query
+                stepStopwatch.Restart();
+                var polygons = QueryDatabaseForPolygonTileData(xTile, yTile, zoom, uuid);
+                stepStopwatch.Stop();
+                databaseQueryTime = stepStopwatch.ElapsedMilliseconds;
+
+                // Feature processing
+                stepStopwatch.Restart();
+                if (polygons.Tables.Count > 0)
+                {
+                    ProcessPolygonTileFeatures(polygons, minX, maxX, minY, maxY, tile);
+                    stepStopwatch.Stop();
+                }
+                featureProcessingTime = stepStopwatch.ElapsedMilliseconds;
+
+                // Tile compression
+                stepStopwatch.Restart();
+                var result = CompressTile(tile);
+                stepStopwatch.Stop();
+                compressionTime = stepStopwatch.ElapsedMilliseconds;
+
+                // Total time
+                totalStopwatch.Stop();
+                long totalTime = totalStopwatch.ElapsedMilliseconds;
+
+                if (_environment.IsDevelopment())
+                {
+                    var debugMessage = new System.Text.StringBuilder();
+                    debugMessage.AppendLine($"Polygon Tile \"z:{zoom} x:{xTile} y:{yTile}\" total processing time: {totalTime}ms");
+                    debugMessage.AppendLine($"   - database query: {databaseQueryTime}ms");
+                    debugMessage.AppendLine($"   - initialization: {initializationTime}ms");
+                    debugMessage.AppendLine($"   - boundary calculation: {boundaryCalculationTime}ms");
+                    debugMessage.AppendLine($"   - feature processing: {featureProcessingTime}ms");
+                    debugMessage.AppendLine($"   - tile compression: {compressionTime}ms");
+
+                    Debug.Write(debugMessage.ToString());
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                if (_environment.IsDevelopment())
+                {
+                    Debug.WriteLine($"Error creating polygon tile: {ex.Message}");
                 }
                 throw;
             }
@@ -122,6 +206,11 @@ namespace SlimVectorTileServer.Application.Common
         private DataSet QueryDatabaseForTileData(int xTile, int yTile, int zoom, string uuid, int cluster)
         {
             return _vectorTileRepository.GetTileData(xTile, yTile, zoom, uuid, cluster);
+        }
+
+        private DataSet QueryDatabaseForPolygonTileData(int xTile, int yTile, int zoom, string uuid)
+        {
+            return _vectorTileRepository.GetPolygonTileData(xTile, yTile, zoom, uuid);
         }
 
         private void ProcessTileFeatures(DataSet pois, double minX, double maxX, double minY, double maxY, VectorTile tile)
@@ -153,6 +242,60 @@ namespace SlimVectorTileServer.Application.Common
                         lock (layer.Features)
                         {
                             layer.Features.Add(feature);
+                        }
+                    }
+                }
+            });
+
+            tile.Layers.Add(layer);
+        }
+
+        private void ProcessPolygonTileFeatures(DataSet polygons, double minX, double maxX, double minY, double maxY, VectorTile tile)
+        {
+            var layer = new Layer { Name = _tileSettings.DefaultPolygonLayerName };
+            var tileBounds = new Envelope(minX, maxX, minY, maxY);
+
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = _tileSettings.MaxDegreeOfParallelism ?? Environment.ProcessorCount
+            };
+
+            Parallel.ForEach(polygons.Tables[0].AsEnumerable(), parallelOptions, row =>
+            {
+                if (row["geometry_wkt"] != DBNull.Value)
+                {
+                    try
+                    {
+                        string wkt = row["geometry_wkt"].ToString()!;
+                        var geometry = _wktReader.Read(wkt);
+
+                        // Check if the geometry intersects with the tile bounds
+                        if (geometry.EnvelopeInternal.Intersects(tileBounds))
+                        {
+                            var attributes = new AttributesTable();
+
+                            // Add all non-geometry columns as attributes
+                            foreach (DataColumn column in polygons.Tables[0].Columns)
+                            {
+                                if (column.ColumnName != "geometry_wkt" && row[column] != DBNull.Value)
+                                {
+                                    attributes.Add(column.ColumnName, row[column]);
+                                }
+                            }
+
+                            var feature = new Feature(geometry, attributes);
+
+                            lock (layer.Features)
+                            {
+                                layer.Features.Add(feature);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_environment.IsDevelopment())
+                        {
+                            Debug.WriteLine($"Error parsing polygon geometry: {ex.Message}");
                         }
                     }
                 }

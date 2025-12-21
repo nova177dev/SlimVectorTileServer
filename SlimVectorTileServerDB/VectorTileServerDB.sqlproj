@@ -65,10 +65,12 @@
     <Folder Include="Security\Roles" />
     <Folder Include="dbo\Functions" />
     <Folder Include="dbo\Functions\Scalar-valued Functions" />
+    <Folder Include="dbo\Storage" />
+    <Folder Include="dbo\Storage\Full Text Catalog" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="dbo\Stored Procedures\sites_get.sql" />
-    <Build Include="dbo\Tables\site.sql" />
+    <Build Include="dbo\Tables\sites.sql" />
     <Build Include="Security\Logins\vector_tile_server_app.sql" />
     <Build Include="Security\Roles\vector_tile_server.sql" />
     <Build Include="Security\Users\vector_tile_server_app.sql" />
@@ -83,5 +85,9 @@
     <Build Include="dbo\Functions\Scalar-valued Functions\geohash_encode.sql" />
     <Build Include="dbo\Functions\Scalar-valued Functions\interpolate_zoom2geohash.sql" />
     <Build Include="dbo\Stored Procedures\site_clusters_get.sql" />
+    <Build Include="dbo\Tables\polygons.sql" />
+    <Build Include="dbo\Stored Procedures\polygons_get.sql" />
+    <Build Include="dbo\Storage\Full Text Catalog\default_catalog.sql" />
+    <Build Include="dbo\Storage\Full Text Catalog\polygons.sql" />
   </ItemGroup>
 </Project>

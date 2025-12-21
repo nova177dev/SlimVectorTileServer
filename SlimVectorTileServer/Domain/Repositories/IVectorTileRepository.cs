@@ -20,7 +20,18 @@ namespace SlimVectorTileServer.Domain.Repositories
         /// <param name="yTile">Y coordinate of the tile</param>
         /// <param name="zoom">Zoom level</param>
         /// <param name="uuid">UUID of the tile request</param>
+        /// <param name="cluster">Cluster option</param>
         /// <returns>Dataset containing tile data</returns>
         DataSet GetTileData(int xTile, int yTile, int zoom, string uuid, int cluster);
+
+        /// <summary>
+        /// Retrieves polygon tile data from the database
+        /// </summary>
+        /// <param name="xTile">X coordinate of the tile</param>
+        /// <param name="yTile">Y coordinate of the tile</param>
+        /// <param name="zoom">Zoom level</param>
+        /// <param name="uuid">UUID of the tile request</param>
+        /// <returns>Dataset containing polygon tile data</returns>
+        DataSet GetPolygonTileData(int xTile, int yTile, int zoom, string uuid);
     }
 }

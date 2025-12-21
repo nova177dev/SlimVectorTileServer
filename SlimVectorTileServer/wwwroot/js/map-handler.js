@@ -14,7 +14,8 @@ const CONFIG = {
 };
 
 // Replace this with your own token or implement a more secure approach
-mapboxgl.accessToken = '@Environment.GetEnvironmentVariable("MAPBOX_ACCESS_TOKEN")';
+//mapboxgl.accessToken = '@Environment.GetEnvironmentVariable("MAPBOX_ACCESS_TOKEN")';
+mapboxgl.accessToken = 'pk.eyJ1Ijoibm92YTE3N3J1cyIsImEiOiJja3oyc2Q4Y3UwMTVuMnZwMjFiOWl2eHo1In0.cpXR0UPWNtpLKonGRe5hpA';
 
 // Initialize map
 const map = new mapboxgl.Map({

@@ -63,5 +63,26 @@ namespace SlimVectorTileServer.Infrastructure.Repositories
 
             return result;
         }
+
+        public DataSet GetPolygonTileData(int xTile, int yTile, int zoom, string uuid)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var result = _dbDataContext.RequestDbForDataSet(
+                _tileSettings.SchemaName,
+                _tileSettings.PolygonsStoredProcedureName,
+                new { x = xTile, y = yTile, z = zoom, uuid }
+            );
+            stopwatch.Stop();
+
+            // Only log debug information in Development environment
+            if (_environment.IsDevelopment())
+            {
+                var debugMessage = new System.Text.StringBuilder();
+                debugMessage.AppendLine($"DB operation time for GetPolygonTileData z:{zoom} x:{xTile} y:{yTile} uuid:{uuid}: {stopwatch.ElapsedMilliseconds}ms");
+                Debug.Write(debugMessage.ToString());
+            }
+
+            return result;
+        }
     }
 }

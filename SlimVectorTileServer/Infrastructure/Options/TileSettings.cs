@@ -10,6 +10,11 @@ namespace SlimVectorTileServer.Infrastructure.Options
         public string DefaultLayerName { get; set; } = "sites";
 
         /// <summary>
+        /// The default layer name for polygon vector tiles
+        /// </summary>
+        public string DefaultPolygonLayerName { get; set; } = "polygons";
+
+        /// <summary>
         /// The maximum degree of parallelism for tile generation
         /// Default: Use all available processors
         /// </summary>
@@ -29,5 +34,10 @@ namespace SlimVectorTileServer.Infrastructure.Options
         /// The stored procedure name for getting points tile data
         /// </summary>
         public string PointsStoredProcedureName { get; set; } = "sites_get";
+
+        /// <summary>
+        /// The stored procedure name for getting polygons tile data
+        /// </summary>
+        public string PolygonsStoredProcedureName { get; set; } = "polygons_get";
     }
 }

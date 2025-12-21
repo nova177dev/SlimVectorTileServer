@@ -21,8 +21,8 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
         ResponseHandler responseHandler
     ) : ControllerBase
     {
-        private readonly IMediator _mediator = mediator; // Automatically initialized
-        private readonly ResponseHandler _responseHandler = responseHandler; // Automatically initialized
+        private readonly IMediator _mediator = mediator;
+        private readonly ResponseHandler _responseHandler = responseHandler;
 
         /// <summary>
         /// Creates a request params.
@@ -40,10 +40,28 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
         }
 
         /// <summary>
+        /// Returns a MapBox Polygon Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("polygons/{zoom:int}/{xTile:int}/{yTile:int}/{uuid}")]
+        [Produces("application/x-protobuf")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileResult))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorMessage), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetPolygonVectorTiles(int zoom, int xTile, int yTile, string uuid)
+        {
+            Response.Headers.Append("Content-Encoding", "gzip");
+            Response.Headers.Vary = HeaderNames.AcceptEncoding;
+
+            byte[] response = await _mediator.Send(new GetPolygonVectorTileQuery(zoom, xTile, yTile, uuid));
+            return File(response, "application/x-protobuf");
+        }
+
+        /// <summary>
         /// Returns a MapBox Points Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
         /// </summary>
         [AllowAnonymous]
-        [HttpGet("{zoom}/{xTile}/{yTile}/{cluster}/{uuid}")]
+        [HttpGet("{zoom:int}/{xTile:int}/{yTile:int}/{cluster:int}/{uuid}")]
         [Produces("application/x-protobuf")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileResult))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,23 +74,5 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
             byte[] response = await _mediator.Send(new GetVectorTileQuery(zoom, xTile, yTile, uuid, cluster));
             return File(response, "application/x-protobuf");
         }
-
-        ///// <summary>
-        ///// Returns a MapBox Clusters Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
-        ///// </summary>
-        //[AllowAnonymous]
-        //[HttpGet("clusters/{zoom}/{xTile}/{yTile}/{uuid}")]
-        //[Produces("application/x-protobuf")]
-        //[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileResult))]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        //[ProducesResponseType(typeof(ErrorMessage), StatusCodes.Status500InternalServerError)]
-        //public async Task<IActionResult> GetClustersVectorTiles(int zoom, int xTile, int yTile, string uuid)
-        //{
-        //    Response.Headers.Append("Content-Encoding", "gzip");
-        //    Response.Headers.Vary = HeaderNames.AcceptEncoding;
-
-        //    byte[] response = await _mediator.Send(new GetVectorTileQuery(zoom, xTile, yTile, uuid, 1));
-        //    return File(response, "application/x-protobuf");
-        //}
     }
 }

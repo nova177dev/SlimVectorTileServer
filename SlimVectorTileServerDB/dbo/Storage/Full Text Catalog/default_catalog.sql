@@ -1,0 +1,1 @@
+﻿create fulltext catalog full_text_catalog with accent_sensitivity = off as default
