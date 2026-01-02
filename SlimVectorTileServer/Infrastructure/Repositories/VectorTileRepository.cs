@@ -84,5 +84,73 @@ namespace SlimVectorTileServer.Infrastructure.Repositories
 
             return result;
         }
+
+        public PolygonBounds? GetPolygonBounds(int id)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                var result = _dbDataContext.RequestDbForDataSet(
+                    _tileSettings.SchemaName,
+                    "polygon_bounds_get",
+                    new { id }
+                );
+                stopwatch.Stop();
+
+                if (_environment.IsDevelopment())
+                {
+                    var debugMessage = new System.Text.StringBuilder();
+                    debugMessage.AppendLine($"DB operation time for GetPolygonBounds id:{id}: {stopwatch.ElapsedMilliseconds}ms");
+                    debugMessage.AppendLine($"   - Tables count: {result.Tables.Count}");
+                    if (result.Tables.Count > 0)
+                    {
+                        debugMessage.AppendLine($"   - Rows count: {result.Tables[0].Rows.Count}");
+                    }
+                    Debug.Write(debugMessage.ToString());
+                }
+
+                if (result.Tables.Count == 0 || result.Tables[0].Rows.Count == 0)
+                {
+                    return null;
+                }
+
+                var row = result.Tables[0].Rows[0];
+
+                if (_environment.IsDevelopment())
+                {
+                    var debugMessage = new System.Text.StringBuilder();
+                    debugMessage.AppendLine($"GetPolygonBounds row data for id:{id}:");
+                    foreach (DataColumn col in result.Tables[0].Columns)
+                    {
+                        debugMessage.AppendLine($"   - {col.ColumnName}: {row[col]}");
+                    }
+                    Debug.Write(debugMessage.ToString());
+                }
+
+                return new PolygonBounds
+                {
+                    Id = Convert.ToInt32(row["id"]),
+                    Name = row["name"]?.ToString() ?? string.Empty,
+                    Level = Convert.ToInt32(row["level"]),
+                    Type = row["type"]?.ToString() ?? string.Empty,
+                    CenterLng = Convert.ToDouble(row["center_lng"]),
+                    CenterLat = Convert.ToDouble(row["center_lat"]),
+                    BoundsWest = Convert.ToDouble(row["bounds_west"]),
+                    BoundsSouth = Convert.ToDouble(row["bounds_south"]),
+                    BoundsEast = Convert.ToDouble(row["bounds_east"]),
+                    BoundsNorth = Convert.ToDouble(row["bounds_north"])
+                };
+            }
+            catch (Exception ex)
+            {
+                if (_environment.IsDevelopment())
+                {
+                    Debug.WriteLine($"Error in GetPolygonBounds id:{id}: {ex.Message}");
+                    Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                }
+                throw;
+            }
+        }
     }
 }

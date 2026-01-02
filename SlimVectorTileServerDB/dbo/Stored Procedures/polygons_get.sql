@@ -7,8 +7,10 @@
 begin
     declare @params nvarchar(max),
             --
+            @parent_id int,
             @search_string varchar(256),
             --
+            @geo_filter geography,
             @bounds geography
 
     set @params =
@@ -18,77 +20,118 @@ begin
         where uuid = @uuid
     )
 
-    select  @search_string = nullif(json_value(value,'$.search_string'), '')
+    select  @parent_id = nullif(json_value(value,'$.parent_id'), ''),
+            @search_string = nullif(json_value(value,'$.search_string'), '')
         from openjson(@params)
 
     set @bounds = dbo.mercator_tile2geography(@x, @y, @z)
 
-    if @z <= 4
+    if @parent_id is not null
     begin
-        select  p.id,
-                p.country_code,
-                p.name,
-                p.level,
-                upper(p.object_type) as [type],
-                p.geo.STAsText() as geometry_wkt
-            from dbo.polygons p (nolock)
-        where (p.geo.Filter(@bounds) = 1)
-            and p.[level] = 1
-            and (
-                    @search_string is null
-                        or contains(p.search_string, @search_string)
-                )
-    end
-    else if @z > 4
-         and @z <= 7
-    begin
-        select  p.id,
-                p.country_code,
-                p.name,
-                p.level,
-                upper(p.object_type) as [type],
-                p.geo.STAsText() as geometry_wkt
-            from dbo.polygons p (nolock)
-        where (p.geo.Filter(@bounds) = 1)
-            and p.[level] = 2
-            and (
-                    @search_string is null
-                        or contains(p.search_string, @search_string)
-                )
+        declare @level int,
+                @country_code varchar(3)
 
-    end
-    else if @z > 7
-         and @z <= 10
-    begin
+        select  @geo_filter = p.geo,
+                @level = iif(p.[level] < 4, p.[level] + 1, p.[level]),
+                @country_code = p.country_code
+            from dbo.polygons p (nolock)
+        where p.id = @parent_id
+            and p.is_active = 1
+
+        set @bounds = @geo_filter
+
         select  p.id,
                 p.country_code,
                 p.name,
                 p.level,
                 upper(p.object_type) as [type],
+                p.geo.STArea() as area,
                 p.geo.STAsText() as geometry_wkt
             from dbo.polygons p (nolock)
-        where (p.geo.Filter(@bounds) = 1)
-            and p.[level] = 3
-            and (
-                    @search_string is null
-                        or contains(p.search_string, @search_string)
-                )
-
+        where p.parent_id = @parent_id
+            and p.is_active = 1
     end
     else
     begin
-        select  p.id,
-                p.country_code,
-                p.name,
-                p.level,
-                upper(p.object_type) as [type],
-                p.geo.STAsText() as geometry_wkt
-            from dbo.polygons p (nolock)
-        where (p.geo.Filter(@bounds) = 1)
-            and p.[level] = 4
-            and (
-                    @search_string is null
-                        or contains(p.search_string, @search_string)
-                )
+        if @z <= 3
+        begin
+            select  p.id,
+                    p.country_code,
+                    p.name,
+                    p.level,
+                    upper(p.object_type) as [type],
+                    p.geo.STArea() as area,
+                    p.geo.STAsText() as geometry_wkt
+                from dbo.polygons p (nolock)
+            where (p.geo.Filter(@bounds) = 1)
+                and (p.[level] = 0)
+                and (p.country_code = @search_string or @search_string is null)
+                --and (p.is_active = 1)
+        end
+        else if @z > 3
+            and @z <= 5
+        begin
+            select  p.id,
+                    p.country_code,
+                    p.name,
+                    p.level,
+                    upper(p.object_type) as [type],
+                    p.geo.STArea() as area,
+                    p.geo.STAsText() as geometry_wkt
+                from dbo.polygons p (nolock)
+            where (p.geo.Filter(@bounds) = 1)
+                and p.[level] = 1
+                and p.is_active = 1
+        end
+        else if @z > 5
+             and @z <= 7
+        begin
+            select  p.id,
+                    p.country_code,
+                    p.name,
+                    p.level,
+                    upper(p.object_type) as [type],
+                    p.geo.STArea() as area,
+                    geo.STAsText() as geometry_wkt
+                    -- p.geo.STAsText() as geometry_wkt
+                from dbo.polygons p (nolock)
+            where (p.geo.Filter(@bounds) = 1)
+                and p.[level] = 2
+                and p.is_active = 1
+        end
+        else if @z > 7
+             and @z <= 9
+        begin
+            select  p.id,
+                    p.country_code,
+                    p.name,
+                    p.level,
+                    upper(p.object_type) as [type],
+                    p.geo.STArea() as area,
+                    p.geo.STAsText() as geometry_wkt
+                from dbo.polygons p (nolock)
+            where (p.geo.Filter(@bounds) = 1)
+                and p.[level] = 3
+                and p.is_active = 1
+        end
+        else
+        begin
+            select  p.id,
+                    p.country_code,
+                    p.name,
+                    p.level,
+                    upper(p.object_type) as [type],
+                    p.geo.STArea() as area,
+                    p.geo.STAsText() as geometry_wkt
+                from dbo.polygons p (nolock)
+            where (p.geo.Filter(@bounds) = 1)
+                and p.[level] = 4
+                and p.is_active = 1
+        end
     end
 end
+go
+grant execute
+    on object::dbo.polygons_get to vector_tile_server_app
+    as dbo;
+go

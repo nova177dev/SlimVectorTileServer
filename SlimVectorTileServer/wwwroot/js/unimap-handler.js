@@ -3,8 +3,8 @@ const CONFIG = {
     API_BASE_URL: 'http://localhost:5035/api',
     MAP_SETTINGS: {
         initialCenter: [-74.6071028, 40.6931568],
-        initialZoom: 2,
-        minZoom: 2,
+        initialZoom: 0,
+        minZoom: 0,
         maxZoom: 15
     },
     LAYER_SETTINGS: {

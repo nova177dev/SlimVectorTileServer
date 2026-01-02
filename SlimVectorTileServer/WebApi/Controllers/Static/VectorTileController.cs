@@ -40,6 +40,32 @@ namespace SlimVectorTileServer.WebApi.Controllers.Static
         }
 
         /// <summary>
+        /// Returns polygon bounds by polygon ID for MapBox fitBounds.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("polygons/bounds/{id:int}")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PolygonBounds))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorMessage), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetPolygonBounds(int id)
+        {
+            var result = await _mediator.Send(new GetPolygonBoundsQuery(id));
+
+            if (result == null)
+            {
+                return NotFound(new ErrorMessage
+                {
+                    TraceUuid = Guid.NewGuid().ToString(),
+                    ResponseCode = StatusCodes.Status404NotFound,
+                    ResponseMessage = $"Polygon with ID {id} not found."
+                });
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Returns a MapBox Polygon Vector Tile (MVT/PBF) for the specified tile coordinates in Mercator projection.
         /// </summary>
         [AllowAnonymous]

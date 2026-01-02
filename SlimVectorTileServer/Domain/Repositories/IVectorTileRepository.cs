@@ -33,5 +33,12 @@ namespace SlimVectorTileServer.Domain.Repositories
         /// <param name="uuid">UUID of the tile request</param>
         /// <returns>Dataset containing polygon tile data</returns>
         DataSet GetPolygonTileData(int xTile, int yTile, int zoom, string uuid);
+
+        /// <summary>
+        /// Retrieves polygon bounds by polygon ID
+        /// </summary>
+        /// <param name="id">Polygon ID</param>
+        /// <returns>Polygon bounds data</returns>
+        PolygonBounds? GetPolygonBounds(int id);
     }
 }

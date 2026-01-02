@@ -269,6 +269,12 @@ namespace SlimVectorTileServer.Application.Common
                         string wkt = row["geometry_wkt"].ToString()!;
                         var geometry = _wktReader.Read(wkt);
 
+                        // Handle antimeridian crossing - split geometry if needed
+                        geometry = HandleAntimeridianCrossing(geometry);
+
+                        if (geometry == null || geometry.IsEmpty)
+                            return;
+
                         // Check if the geometry intersects with the tile bounds
                         if (geometry.EnvelopeInternal.Intersects(tileBounds))
                         {
@@ -302,6 +308,137 @@ namespace SlimVectorTileServer.Application.Common
             });
 
             tile.Layers.Add(layer);
+        }
+
+        /// <summary>
+        /// Handles geometries that cross the antimeridian (±180° longitude) by normalizing coordinates
+        /// </summary>
+        private Geometry? HandleAntimeridianCrossing(Geometry geometry)
+        {
+            if (geometry == null || geometry.IsEmpty)
+                return geometry;
+
+            var envelope = geometry.EnvelopeInternal;
+
+            // Check if geometry likely crosses the antimeridian
+            // A geometry crossing the antimeridian will have a very wide longitude span (> 180°)
+            double longitudeSpan = envelope.MaxX - envelope.MinX;
+
+            if (longitudeSpan <= 180)
+            {
+                // Normal geometry, no antimeridian crossing
+                return geometry;
+            }
+
+            // Geometry crosses antimeridian - normalize by shifting coordinates
+            // This handles the case where coordinates wrap from +180 to -180
+            try
+            {
+                var factory = geometry.Factory;
+
+                // For geometries crossing the antimeridian, we need to shift negative longitudes
+                // to positive (add 360) to make the geometry continuous
+                var normalizedGeometry = NormalizeGeometryCoordinates(geometry);
+
+                // After normalization, clip to valid bounds if needed
+                if (normalizedGeometry != null && normalizedGeometry.IsValid)
+                {
+                    return normalizedGeometry;
+                }
+
+                return geometry;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error handling antimeridian crossing: {ex.Message}");
+                return geometry;
+            }
+        }
+
+        /// <summary>
+        /// Normalizes geometry coordinates by shifting negative longitudes for antimeridian-crossing geometries
+        /// </summary>
+        private Geometry NormalizeGeometryCoordinates(Geometry geometry)
+        {
+            var coordinates = geometry.Coordinates;
+            var newCoordinates = new Coordinate[coordinates.Length];
+
+            // Determine if we should shift negative or positive longitudes
+            // Count coordinates on each side of the antimeridian
+            int negativeCount = coordinates.Count(c => c.X < 0);
+            int positiveCount = coordinates.Count(c => c.X >= 0);
+
+            // Shift the minority side to be continuous with the majority
+            bool shiftNegativeToPositive = negativeCount <= positiveCount;
+
+            for (int i = 0; i < coordinates.Length; i++)
+            {
+                double x = coordinates[i].X;
+                double y = coordinates[i].Y;
+
+                if (shiftNegativeToPositive && x < 0)
+                {
+                    // Shift negative longitudes to positive (e.g., -170 becomes 190)
+                    x += 360;
+                }
+                else if (!shiftNegativeToPositive && x > 0)
+                {
+                    // Shift positive longitudes to negative (e.g., 170 becomes -190)
+                    x -= 360;
+                }
+
+                newCoordinates[i] = new Coordinate(x, y);
+            }
+
+            // Recreate the geometry with normalized coordinates
+            var factory = geometry.Factory;
+
+            if (geometry is Polygon polygon)
+            {
+                var shell = factory.CreateLinearRing(GetNormalizedRingCoordinates(polygon.Shell.Coordinates, shiftNegativeToPositive));
+                var holes = polygon.Holes.Select(h =>
+                    factory.CreateLinearRing(GetNormalizedRingCoordinates(h.Coordinates, shiftNegativeToPositive))).ToArray();
+                return factory.CreatePolygon(shell, holes);
+            }
+            else if (geometry is MultiPolygon multiPolygon)
+            {
+                var polygons = new Polygon[multiPolygon.NumGeometries];
+                for (int i = 0; i < multiPolygon.NumGeometries; i++)
+                {
+                    var poly = (Polygon)multiPolygon.GetGeometryN(i);
+                    var shell = factory.CreateLinearRing(GetNormalizedRingCoordinates(poly.Shell.Coordinates, shiftNegativeToPositive));
+                    var holes = poly.Holes.Select(h =>
+                        factory.CreateLinearRing(GetNormalizedRingCoordinates(h.Coordinates, shiftNegativeToPositive))).ToArray();
+                    polygons[i] = factory.CreatePolygon(shell, holes);
+                }
+                return factory.CreateMultiPolygon(polygons);
+            }
+
+            return geometry;
+        }
+
+        private Coordinate[] GetNormalizedRingCoordinates(Coordinate[] coordinates, bool shiftNegativeToPositive)
+        {
+            var newCoordinates = new Coordinate[coordinates.Length];
+
+            for (int i = 0; i < coordinates.Length; i++)
+            {
+                double x = coordinates[i].X;
+                double y = coordinates[i].Y;
+
+                if (shiftNegativeToPositive && x < 0)
+                {
+                    x += 360;
+                }
+                else if (!shiftNegativeToPositive && x > 0)
+                {
+                    x -= 360;
+                }
+
+                newCoordinates[i] = new Coordinate(x, y);
+            }
+
+            return newCoordinates;
         }
 
         private byte[] CompressTile(VectorTile tile)

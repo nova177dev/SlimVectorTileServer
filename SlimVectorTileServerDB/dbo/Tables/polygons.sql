@@ -16,6 +16,9 @@
         index ix_polygons_country_code,
     object_type varchar(64) null
         index ix_polygons_object_type,
+    is_active bit not null
+        index ix_polygons_is_active
+        constraint df_polygons_is_active default (0),
     search_string as ('[void], ' + isnull(country_code, '') + ' > ' + isnull(name, '')) persisted not null
 )
 go

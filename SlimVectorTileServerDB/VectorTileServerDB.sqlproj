@@ -89,5 +89,6 @@
     <Build Include="dbo\Stored Procedures\polygons_get.sql" />
     <Build Include="dbo\Storage\Full Text Catalog\default_catalog.sql" />
     <Build Include="dbo\Storage\Full Text Catalog\polygons.sql" />
+    <Build Include="dbo\Stored Procedures\polygon_bounds_get.sql" />
   </ItemGroup>
 </Project>
