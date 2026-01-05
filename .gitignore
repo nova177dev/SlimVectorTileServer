@@ -367,3 +367,6 @@ FodyWeavers.xsd
 /SlimVectorTileServer/.env
 /SlimVectorTileServer/wwwroot/js/cluster-handler.js
 /SlimVectorTileServer/wwwroot/cluster.html
+/SlimVectorTileServer/wwwroot/js/map-handler.js
+/SlimVectorTileServer/wwwroot/js/polygon-drill-down-handler.js
+/SlimVectorTileServer/wwwroot/js/polygon-handler.js
