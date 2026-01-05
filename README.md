@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
 
-A lightweight, high-performance MapBox Custom Vector Tile Server built with .NET Core that dynamically generates vector tiles from MS SQL Server database data. This server follows clean architecture principles and provides a simple API for serving MapBox Vector Tiles to web applications.
+A lightweight, high-performance vector tile server built with .NET Core that dynamically generates vector tiles from MS SQL Server database data. This server follows clean architecture principles and provides a simple API for serving MapBox Vector Tiles to web applications.
 
 ## Table of Contents
 
@@ -237,53 +237,59 @@ Log.Logger = new LoggerConfiguration()
 
 ## Caching
 
-The application uses SQL Server distributed caching to store generated vector tiles:
+SQL Server distributed caching with configurable zoom-level expiration:
 
-- Cache entries expire depending on the zoom level:
-  > 1 week for zoom levels 0-3
-  > 72 hours for zoom levels 4-6
-  > 24 hours for zoom levels 7-10
-  > for other zoom levels cache is disabled
-  Feel free to adjust it to suit your own needs.
-- Expired items are deleted every 72 hours
-- Cache is implemented using `Microsoft.Extensions.Caching.SqlServer`
+| Zoom Level | Default Expiration |
+|------------|-------------------|
+| 0-3 | 7 days (168 hours) |
+| 4-6 | 3 days (72 hours) |
+| 7-10 | 24 hours |
+| 11+ | Caching disabled |
+
+Configure via `CacheSettings.ZoomLevelExpirations` and `CacheSettings.MaxCacheZoomLevel`.
 
 ## Rate Limiting
 
-The application implements rate limiting to prevent abuse:
+Fixed window rate limiting using `System.Threading.RateLimiting`:
 
-- 60 requests per minute per IP address
-- Uses `System.Threading.RateLimiting` with a fixed window limiter
-- Helps protect the server from excessive load
+- **Default**: 600 requests per minute per IP
+- **Configurable**: Via `AppSettings.RateLimitPerMinute`
+- **Partition**: By `RemoteIpAddress` or "anonymous"
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Database Connection Issues**
-   - Verify your connection strings in environment variables
-   - Ensure SQL Server is running and accessible
-   - Check firewall settings
+   - Verify connection strings in environment variables or `.env` file
+   - Ensure SQL Server is running with spatial data support enabled
+   - Check firewall settings and SQL Server authentication mode
 
 2. **Missing Vector Tiles**
-   - Verify the stored procedure `dbo.sites_get` exists and returns data
-   - Check that coordinates are within valid ranges
-   - Examine logs for any errors during tile generation
+   - Verify stored procedures exist (`dbo.sites_get`, `dbo.polygons_get`)
+   - Check that coordinates are within valid tile ranges
+   - Examine `Logs/applog-*.json` for detailed errors
 
 3. **Performance Issues**
-   - Ensure the cache table is properly created
-   - Add appropriate indexes to your data tables
-   - Consider increasing the cache duration for static data
+   - Ensure cache table has proper indexes
+   - Adjust `TileSettings.MaxDegreeOfParallelism` for your server
+   - Add spatial indexes to your data tables
+   - Consider adjusting `CacheSettings.MaxCacheZoomLevel`
+
+4. **Antimeridian Issues**
+   - Geometries crossing ±180° are automatically normalized
+   - Check debug output for "Error handling antimeridian crossing" messages
 
 ### Debugging
 
-- Check the logs in the `Logs/` directory for detailed error information
-- Use Swagger UI in development mode to test API endpoints
-- Enable browser developer tools to inspect network requests and responses
+- Enable Development environment for detailed Debug output
+- Check `Logs/` directory for JSON-formatted error logs
+- Use Swagger UI at `/swagger` to test API endpoints
+- Use browser DevTools Network tab to inspect tile responses
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
 
 Copyright (c) 2025 Anton V. Novoseltsev
 
