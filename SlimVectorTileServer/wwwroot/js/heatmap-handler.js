@@ -4,7 +4,7 @@
 
 // Configuration
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:5035/api',
+    API_BASE_URL: '',
     MAP_SETTINGS: {
         initialCenter: [-74.6071028, 40.6931568],
         initialZoom: 2,
