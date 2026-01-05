@@ -4,6 +4,7 @@
 
 // Configuration
 const CONFIG = {
+    // Replace API_BASE_URL with the actual value in your case.    
     API_BASE_URL: '',
     MAP_SETTINGS: {
         initialCenter: [-74.6071028, 40.6931568],
@@ -38,7 +39,8 @@ const CONFIG = {
     }
 };
 
-// Mapbox access token 
+// Replace this with your own token or implement a more secure approach.
+// mapboxgl.accessToken = '@Environment.GetEnvironmentVariable("MAPBOX_ACCESS_TOKEN")';
 mapboxgl.accessToken = '';
 
 // Initialize map
