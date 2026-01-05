@@ -4,6 +4,7 @@
 
 // Configuration
 const CONFIG = {
+    // Replace API_BASE_URL with the actual value in your case.    
     API_BASE_URL: '',
     MAP_SETTINGS: {
         initialCenter: [-74.6071028, 40.6931568],
@@ -25,8 +26,8 @@ const CONFIG = {
     }
 };
 
-// Mapbox access token - Should be stored in a secure configuration
-// In a production environment, this should be loaded from environment variables or a secure backend
+// Replace this with your own token or implement a more secure approach.
+// mapboxgl.accessToken = '@Environment.GetEnvironmentVariable("MAPBOX_ACCESS_TOKEN")';
 const MAPBOX_TOKEN = '';
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
