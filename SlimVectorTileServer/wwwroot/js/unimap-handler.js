@@ -1,6 +1,6 @@
 // Configuration
 const CONFIG = {
-    // Replace API_BASE_URL with the actual value in your case.    
+    // Replace API_BASE_URL with the actual value in your case.
     API_BASE_URL: '',
     MAP_SETTINGS: {
         initialCenter: [-74.6071028, 40.6931568],
