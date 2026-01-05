@@ -4,7 +4,8 @@
 
 // Configuration
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:5035/api',
+    // Replace API_BASE_URL with the actual value in your case.
+    API_BASE_URL: '',
     MAP_SETTINGS: {
         initialCenter: [-74.6071028, 40.6931568],
         initialZoom: 2,
@@ -26,8 +27,9 @@ const CONFIG = {
     }
 };
 
-// Mapbox access token
-mapboxgl.accessToken = 'pk.eyJ1Ijoibm92YTE3N3J1cyIsImEiOiJja3oyc2Q4Y3UwMTVuMnZwMjFiOWl2eHo1In0.cpXR0UPWNtpLKonGRe5hpA';
+// Replace this with your own token or implement a more secure approach.
+// mapboxgl.accessToken = '@Environment.GetEnvironmentVariable("MAPBOX_ACCESS_TOKEN")';
+mapboxgl.accessToken = '';
 
 // Initialize map
 const map = new mapboxgl.Map({

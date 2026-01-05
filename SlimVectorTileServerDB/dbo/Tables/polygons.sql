@@ -19,6 +19,9 @@
     is_active bit not null
         index ix_polygons_is_active
         constraint df_polygons_is_active default (0),
+    parent_id int null
+        index ix_polygons_parent_id
+        constraint fk_polygons_parent_id foreign key references dbo.polygons (id),
     search_string as ('[void], ' + isnull(country_code, '') + ' > ' + isnull(name, '')) persisted not null
 )
 go

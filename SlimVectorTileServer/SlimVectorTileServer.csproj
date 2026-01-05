@@ -10,7 +10,6 @@
   <ItemGroup>
     <Content Remove="wwwroot\map_polygon.html" />
     <Content Remove="wwwroot\map_polygon_drill_down.html" />
-    <Content Remove="wwwroot\unimap.html" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +34,6 @@
   <ItemGroup>
     <None Include="wwwroot\map_polygon_drill_down.html" />
     <None Include="wwwroot\map_polygon.html" />
-    <None Include="wwwroot\unimap.html" />
     <None Include="wwwroot\map.html" />
   </ItemGroup>
 
