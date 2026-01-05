@@ -38,7 +38,7 @@ const CONFIG = {
     }
 };
 
-// Mapbox access token
+// Mapbox access token 
 mapboxgl.accessToken = '';
 
 // Initialize map
